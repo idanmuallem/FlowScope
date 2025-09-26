@@ -10,6 +10,13 @@ const inputBuffer = {
 
 let flushTimer = null;
 
+function clearFlushTimer() {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+}
+
 function scheduleFlush() {
   if (flushTimer) {
     return;
@@ -21,6 +28,7 @@ function scheduleFlush() {
 }
 
 function flushInputBuffer() {
+  clearFlushTimer();
   if (inputBuffer.keys === 0 && inputBuffer.mouseEvents === 0 && inputBuffer.mouseDistance === 0) {
     return;
   }

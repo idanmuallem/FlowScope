@@ -25,6 +25,7 @@ let currentActivitySince = Date.now();
 const activitySegments = [];
 let currentDayKey = getTodayKey();
 let tabSwitchCount = 0;
+let estimateUpdateTimer = null;
 
 function normalizeState(state) {
   return state === "idle" || state === "locked" ? "idle" : "active";
@@ -43,13 +44,17 @@ function pruneActivity(cutoff) {
 }
 
 function recordActivityTransition(newState) {
+  const normalizedState = normalizeState(newState);
+  if (normalizedState === currentActivityState) {
+    return;
+  }
   const now = Date.now();
   activitySegments.push({
     state: currentActivityState,
     start: currentActivitySince,
     end: now,
   });
-  currentActivityState = normalizeState(newState);
+  currentActivityState = normalizedState;
   currentActivitySince = now;
   const cutoff = now - MAX_EVENT_AGE_MS;
   pruneActivity(cutoff);
@@ -124,12 +129,20 @@ function cleanupOldEntries(data) {
         },
       },
       () => {
-        console.log("Archived weekly summary:", weekKey);
+        if (chrome.runtime.lastError) {
+          console.error("Failed to archive weekly summary:", chrome.runtime.lastError);
+        } else {
+          console.log("Archived weekly summary:", weekKey);
+        }
       }
     );
 
     chrome.storage.local.remove(toArchive, () => {
-      console.log("Removed old entries:", toArchive);
+      if (chrome.runtime.lastError) {
+        console.error("Failed to remove old entries:", chrome.runtime.lastError);
+      } else {
+        console.log("Removed old entries:", toArchive);
+      }
     });
   }
 }
@@ -137,6 +150,10 @@ function cleanupOldEntries(data) {
 function withTodayData(mutator) {
   const today = ensureCurrentDay();
   chrome.storage.local.get(null, (data) => {
+    if (chrome.runtime.lastError) {
+      console.error("Failed to read storage:", chrome.runtime.lastError);
+      return;
+    }
     const todayData = {
       tabSwitches: 0,
       idleTime: 0,
@@ -151,11 +168,30 @@ function withTodayData(mutator) {
     }
 
     chrome.storage.local.set({ [today]: todayData }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Failed to persist today data:", chrome.runtime.lastError);
+        return;
+      }
       console.log("Saved today data:", todayData);
+      requestEstimateUpdate();
     });
 
     const updatedData = { ...data, [today]: todayData };
     cleanupOldEntries(updatedData);
+  });
+}
+
+function initializeTodayState() {
+  const today = ensureCurrentDay();
+  chrome.storage.local.get(today, (data) => {
+    if (chrome.runtime.lastError) {
+      console.error("Failed to initialize today state:", chrome.runtime.lastError);
+      return;
+    }
+    const saved = data[today];
+    if (saved && typeof saved.tabSwitches === "number") {
+      tabSwitchCount = saved.tabSwitches;
+    }
   });
 }
 
@@ -165,6 +201,7 @@ function handleTabSwitch() {
   recordEvent(history.tabSwitches);
   withTodayData(() => {});
   console.log("Tab/window switch recorded. Total:", tabSwitchCount);
+  requestEstimateUpdate();
 }
 
 // Fired when user switches to a new tab
@@ -193,7 +230,7 @@ chrome.idle.onStateChanged.addListener((newState) => {
 });
 
 // --- Message Handling ---
-chrome.runtime.onMessage.addListener((msg, sender) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "scroll") {
     const urlKey = msg.url || "unknown";
     recordEvent(history.scrolls, { distance: msg.distance, speed: msg.speed });
@@ -205,13 +242,16 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       todayData.scroll[urlKey].distance += msg.distance;
       todayData.scroll[urlKey].events += 1;
     });
+    requestEstimateUpdate();
   } else if (msg.type === "input-activity") {
     recordEvent(history.inputs, {
       keys: msg.keys,
       mouseDistance: msg.mouseDistance,
       mouseEvents: msg.mouseEvents,
     });
+    requestEstimateUpdate();
   }
+  return false;
 });
 
 // --- Focus Metrics Aggregation ---
@@ -297,11 +337,36 @@ function collectWindowMetrics(windowSeconds) {
 }
 
 // --- Focus Estimation ---
+function requestEstimateUpdate(immediate = false) {
+  if (immediate) {
+    if (estimateUpdateTimer) {
+      clearTimeout(estimateUpdateTimer);
+      estimateUpdateTimer = null;
+    }
+    updateEstimate();
+    return;
+  }
+
+  if (estimateUpdateTimer) {
+    return;
+  }
+
+  estimateUpdateTimer = setTimeout(() => {
+    estimateUpdateTimer = null;
+    updateEstimate();
+  }, 750);
+}
+
 function updateEstimate() {
   const W1 = collectWindowMetrics(15);
   const W2 = collectWindowMetrics(120);
   const result = estimateFocus(W1, W2);
-  chrome.storage.local.set({ focusEstimate: result });
+  chrome.storage.local.set({ focusEstimate: result }, () => {
+    if (chrome.runtime.lastError) {
+      console.error("Failed to persist focus estimate:", chrome.runtime.lastError);
+    }
+  });
 }
+initializeTodayState();
 updateEstimate();
 setInterval(updateEstimate, 5000);
