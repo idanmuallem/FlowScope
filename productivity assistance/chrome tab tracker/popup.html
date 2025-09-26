@@ -1,11 +1,119 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>FlowScope</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 16px;
+        width: 320px;
+        background: linear-gradient(160deg, #121c42 0%, #1f3b73 60%, #0b1533 100%);
+        color: #f4f7ff;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-align: center;
+      }
+
+      p.subtitle {
+        margin: 0 0 16px;
+        font-size: 13px;
+        opacity: 0.78;
+        text-align: center;
+      }
+
+      .card {
+        background: rgba(12, 21, 51, 0.72);
+        border: 1px solid rgba(107, 145, 255, 0.35);
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 10px 25px rgba(10, 15, 36, 0.25);
+      }
+
+      .card h2 {
+        margin: 0 0 4px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #7ec6ff;
+      }
+
+      .card .value {
+        font-size: 15px;
+        font-weight: 500;
+      }
+
+      .card .value strong {
+        font-size: 18px;
+        font-weight: 600;
+        color: #fefefe;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        background: rgba(57, 209, 114, 0.18);
+        color: #c2fbd7;
+      }
+
+      .status-chip.warn {
+        background: rgba(255, 193, 59, 0.18);
+        color: #ffe7a1;
+      }
+
+      .status-chip.error {
+        background: rgba(239, 71, 111, 0.18);
+        color: #ffd0da;
+      }
+
+      .muted {
+        opacity: 0.72;
+        font-size: 12px;
+        margin-top: 6px;
+      }
+
+      #status {
+        font-size: 16px;
+        font-weight: 600;
+      }
+    </style>
   </head>
   <body>
-    <h2>FlowScope</h2>
-    <div id="output">Extension loaded.</div>
+    <h1>FlowScope</h1>
+    <p class="subtitle">Real-time focus insights for your browsing session.</p>
+
+    <section class="card" id="focus-card">
+      <h2>Focus estimate</h2>
+      <div class="value" id="status">Loading focus score…</div>
+      <div class="muted" id="confidence"></div>
+    </section>
+
+    <section class="card">
+      <h2>Today</h2>
+      <div class="value" id="today">Checking today&apos;s activity…</div>
+    </section>
+
+    <section class="card">
+      <h2>Weekly summaries</h2>
+      <div class="value" id="week">Checking weekly archives…</div>
+    </section>
+
     <script src="popup.js"></script>
   </body>
 </html>
