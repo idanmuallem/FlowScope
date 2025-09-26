@@ -2,10 +2,40 @@
 <html>
   <head>
     <title>FlowScope</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 16px;
+        min-width: 240px;
+      }
+
+      h2 {
+        margin-top: 0;
+      }
+
+      .status {
+        margin-bottom: 8px;
+      }
+
+      .status-label {
+        font-weight: bold;
+      }
+    </style>
   </head>
   <body>
     <h2>FlowScope</h2>
-    <div id="output">Extension loaded.</div>
+    <div class="status">
+      <span class="status-label">Today:</span>
+      <span id="today">Loading…</span>
+    </div>
+    <div class="status">
+      <span class="status-label">Weekly summary:</span>
+      <span id="week">Loading…</span>
+    </div>
+    <div class="status">
+      <span class="status-label">Focus status:</span>
+      <span id="status">Loading…</span>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -4,27 +4,45 @@ document.addEventListener("DOMContentLoaded", () => {
     const todayData = data[todayKey];
 
     // Today status
-    let todayStatus = todayData
-      ? "OK: Today’s entry exists"
-      : "X: No data collected today";
-    document.getElementById("today").textContent = todayStatus;
+    const todayElement = document.getElementById("today");
+    if (todayElement) {
+      if (todayData) {
+        const switches = todayData.tabSwitches ?? 0;
+        const idle = todayData.idleTime ?? 0;
+        todayElement.textContent = `Active switches: ${switches}, Idle time: ${idle}s`;
+      } else {
+        todayElement.textContent = "No data collected today";
+      }
+    }
 
     // Weekly summary status
     const weekKeys = Object.keys(data).filter((k) => k.includes("W"));
-    let weekStatus = weekKeys.length
-      ? `OK: ${weekKeys.length} weekly summaries available`
-      : "X: No weekly summary yet";
-    document.getElementById("week").textContent = weekStatus;
+    const weekElement = document.getElementById("week");
+    if (weekElement) {
+      if (weekKeys.length) {
+        const sortedKeys = weekKeys.slice().sort();
+        const latestKey = sortedKeys[sortedKeys.length - 1];
+        const summary = data[latestKey];
+        const switches = summary?.avgTabSwitches ?? 0;
+        const idle = summary?.avgIdleTime ?? 0;
+        weekElement.textContent = `${latestKey}: avg switches ${switches}, idle ${idle}s`;
+      } else {
+        weekElement.textContent = "No weekly summary yet";
+      }
+    }
   });
 
   chrome.storage.local.get("focusEstimate", (data) => {
     const e = data.focusEstimate;
+    const statusElement = document.getElementById("status");
+    if (!statusElement) {
+      return;
+    }
+
     if (e) {
-      document.getElementById("status").textContent =
-        `Score: ${e.focus_score}, Label: ${e.label}, Confidence: ${e.confidence}`;
+      statusElement.textContent = `Score: ${e.focus_score}, Label: ${e.label}, Confidence: ${e.confidence}`;
     } else {
-      document.getElementById("status").textContent =
-        "No focus estimate available yet";
+      statusElement.textContent = "No focus estimate available yet";
     }
   });
 });
