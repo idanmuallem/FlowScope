@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "FlowScope",
+  "version": "1.0.0",
+  "description": "Tracks active tab/window focus time, idle time, and scroll behavior for data retrieval.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "idle"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FlowScope"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
